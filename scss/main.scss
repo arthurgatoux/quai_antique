@@ -24,6 +24,7 @@ p {
 
 .hero-scene {
     position: relative;
+
     &::before {
         content: "";
         position: absolute;
@@ -36,11 +37,11 @@ p {
         filter: brightness(0.3);
     }
 
-    *{
+    * {
         position: relative;
     }
 
-    .hero-scene-content{
+    .hero-scene-content {
         height: 400px;
         display: flex;
         flex-direction: column;
@@ -49,10 +50,37 @@ p {
     }
 }
 
-.text-justify{
+.text-justify {
     text-align: justify;
 }
 
 .gap-large {
-  --bs-gutter-x: 5rem; 
+    --bs-gutter-x: 5rem;
+}
+
+.image-card {
+    position: relative;
+
+    &:hover {
+        .titre-image {
+            opacity: 1;
+        }
+
+        img {
+            filter: brightness(0.3);
+        }
+    }
+
+    img {
+        transition: all 0.3s;
+    }
+
+    .titre-image {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: all 0.3s;
+    }
 }
