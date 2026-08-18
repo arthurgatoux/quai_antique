@@ -12024,4 +12024,12 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+.gap-large {
+  --bs-gutter-x: 5rem;
 }/*# sourceMappingURL=main.css.map */
