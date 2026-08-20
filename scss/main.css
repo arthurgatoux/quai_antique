@@ -12076,4 +12076,15 @@ p {
   display: block;
   color: #292222;
   padding: 10px;
+}
+
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.85);
+  transition: opacity 0.2s ease;
 }/*# sourceMappingURL=main.css.map */
