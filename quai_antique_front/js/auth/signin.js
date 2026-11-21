@@ -38,7 +38,8 @@ function checkCredentials() {
             setToken(token);
             //placer ce token en cookie
 
-            setCookie(RoleCookieName, result.roles[0], 7);
+            const role = result.roles.includes("ROLE_ADMIN") ? "admin" : "client";
+            setCookie(RoleCookieName, role, 7);
             window.location.replace("/");
         })
         .catch(error => console.log('error', error));
