@@ -1,0 +1,2545 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+bin/
+  console
+  phpunit
+config/
+  packages/
+    cache.yaml
+    doctrine_migrations.yaml
+    doctrine.yaml
+    framework.yaml
+    nelmio_api_doc.yaml
+    nelmio_cors.yaml
+    routing.yaml
+    security.yaml
+    twig.yaml
+  routes/
+    annotations.yaml
+    framework.yaml
+    nelmio_api_doc.yaml
+  bundles.php
+  preload.php
+  routes.yaml
+  services.yaml
+migrations/
+  .gitignore
+  Version20230813114306.php
+  Version20230813115543.php
+  Version20230818155000.php
+  Version20230913125559.php
+public/
+  index.php
+src/
+  Controller/
+    .gitignore
+    HomeController.php
+    RestaurantController.php
+    SecurityController.php
+  DataFixtures/
+    PictureFixtures.php
+    RestaurantFixtures.php
+    UserFixtures.php
+  Entity/
+    .gitignore
+    Picture.php
+    Restaurant.php
+    User.php
+  Repository/
+    .gitignore
+    PictureRepository.php
+    RestaurantRepository.php
+    UserRepository.php
+  Security/
+    ApiTokenAuthenticator.php
+  Service/
+    Utils.php
+  Kernel.php
+templates/
+  base.html.twig
+tests/
+  Controller/
+    SmokeTest.php
+  Entity/
+    UserTest.php
+  bootstrap.php
+.env.test
+.gitignore
+CODE_OF_CONDUCT.md
+composer.json
+CONTRIBUTING.md
+php.ini
+phpunit.xml.dist
+README.md
+studi-restaurant-view.png
+symfony.lock
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="bin/phpunit">
+#!/usr/bin/env php
+<?php
+
+if (!ini_get('date.timezone')) {
+    ini_set('date.timezone', 'UTC');
+}
+
+if (is_file(dirname(__DIR__).'/vendor/phpunit/phpunit/phpunit')) {
+    define('PHPUNIT_COMPOSER_INSTALL', dirname(__DIR__).'/vendor/autoload.php');
+    require PHPUNIT_COMPOSER_INSTALL;
+    PHPUnit\TextUI\Command::main();
+} else {
+    if (!is_file(dirname(__DIR__).'/vendor/symfony/phpunit-bridge/bin/simple-phpunit.php')) {
+        echo "Unable to find the `simple-phpunit.php` script in `vendor/symfony/phpunit-bridge/bin/`.\n";
+        exit(1);
+    }
+
+    require dirname(__DIR__).'/vendor/symfony/phpunit-bridge/bin/simple-phpunit.php';
+}
+</file>
+
+<file path="config/packages/cache.yaml">
+framework:
+    cache:
+        # Unique name of your app: used to compute stable namespaces for cache keys.
+        #prefix_seed: your_vendor_name/app_name
+
+        # The "app" cache stores to the filesystem by default.
+        # The data in this cache should persist between deploys.
+        # Other options include:
+
+        # Redis
+        #app: cache.adapter.redis
+        #default_redis_provider: redis://localhost
+
+        # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
+        #app: cache.adapter.apcu
+
+        # Namespaced pools use the above "app" backend by default
+        #pools:
+            #my.dedicated.cache: null
+</file>
+
+<file path="config/packages/doctrine_migrations.yaml">
+doctrine_migrations:
+    migrations_paths:
+        # namespace is arbitrary but should be different from App\Migrations
+        # as migrations classes should NOT be autoloaded
+        'DoctrineMigrations': '%kernel.project_dir%/migrations'
+    enable_profiler: false
+</file>
+
+<file path="config/packages/doctrine.yaml">
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+
+        # IMPORTANT: You MUST configure your server version,
+        # either here or in the DATABASE_URL env var (see .env file)
+        #server_version: '15'
+    orm:
+        auto_generate_proxy_classes: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        auto_mapping: true
+        mappings:
+            App:
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Entity'
+                prefix: 'App\Entity'
+                alias: App
+
+when@test:
+    doctrine:
+        dbal:
+            # "TEST_TOKEN" is typically set by ParaTest
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+when@prod:
+    doctrine:
+        orm:
+            auto_generate_proxy_classes: false
+            proxy_dir: '%kernel.build_dir%/doctrine/orm/Proxies'
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system
+</file>
+
+<file path="config/packages/framework.yaml">
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    #csrf_protection: true
+    http_method_override: false
+
+    # Enables session support. Note that the session will ONLY be started if you read or write from it.
+    # Remove or comment this section to explicitly disable session support.
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+        storage_factory_id: session.storage.factory.native
+
+    #esi: true
+    #fragments: true
+    php_errors:
+        log: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
+</file>
+
+<file path="config/packages/nelmio_api_doc.yaml">
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Restaurant API
+            description: Documentation de l'API Restaurant Studi.
+            version: 1.0.0
+        components:
+            securitySchemes:
+                X-AUTH-TOKEN:
+                    type: apiKey
+                    name: X-AUTH-TOKEN
+                    in: header
+        security:
+            - X-AUTH-TOKEN: [ ]
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
+</file>
+
+<file path="config/packages/nelmio_cors.yaml">
+nelmio_cors:
+    defaults:
+        origin_regex: true
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+        allow_headers: ['Content-Type', 'Authorization', 'X-AUTH-TOKEN']
+        expose_headers: ['Link']
+        max_age: 3600
+    paths:
+        '^/': null
+</file>
+
+<file path="config/packages/routing.yaml">
+framework:
+    router:
+        utf8: true
+
+        # Configure how to generate URLs in non-HTTP contexts, such as CLI commands.
+        # See https://symfony.com/doc/current/routing.html#generating-urls-in-commands
+        #default_uri: http://localhost
+
+when@prod:
+    framework:
+        router:
+            strict_requirements: null
+</file>
+
+<file path="config/packages/security.yaml">
+security:
+    enable_authenticator_manager: true
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    providers:
+        # used to reload user from session & other features (e.g. switch_user)
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        main:
+            lazy: true
+            stateless: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\ApiTokenAuthenticator
+            json_login:
+                check_path: app_api_login
+
+            # activate different ways to authenticate
+            # https://symfony.com/doc/current/security.html#the-firewall
+
+            # https://symfony.com/doc/current/security/impersonating_user.html
+            # switch_user: true
+
+    # Easy way to control access for large sections of your site
+    # Note: Only the *first* access control that matches will be used
+    access_control:
+         - { path: ^/api/registration, roles: PUBLIC_ACCESS }
+         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+         - { path: ^/api, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            # By default, password hashers are resource intensive and take time. This is
+            # important to generate secure password hashes. In tests however, secure hashes
+            # are not important, waste resources and increase test times. The following
+            # reduces the work factor to the lowest possible values.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon
+</file>
+
+<file path="config/packages/twig.yaml">
+twig:
+    default_path: '%kernel.project_dir%/templates'
+
+when@test:
+    twig:
+        strict_variables: true
+</file>
+
+<file path="config/routes/annotations.yaml">
+# config/routes/annotations.yaml
+controllers:
+    resource: ../../src/Controller/
+    type: annotation
+kernel:
+    resource: ../../src/Kernel.php
+    type: annotation
+</file>
+
+<file path="config/routes/framework.yaml">
+when@dev:
+    _errors:
+        resource: '@FrameworkBundle/Resources/config/routing/errors.xml'
+        prefix: /_error
+</file>
+
+<file path="config/routes/nelmio_api_doc.yaml">
+# Expose your documentation as JSON swagger compliant
+app.swagger:
+    path: /api/doc.json
+    methods: GET
+    defaults: { _controller: nelmio_api_doc.controller.swagger }
+
+# Requires the Asset component and the Twig bundle
+# $ composer require twig asset
+app.swagger_ui:
+    path: /api/doc
+    methods: GET
+    defaults: { _controller: nelmio_api_doc.controller.swagger_ui }
+</file>
+
+<file path="config/bundles.php">
+<?php
+
+return [
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+    Doctrine\Bundle\DoctrineBundle\DoctrineBundle::class => ['all' => true],
+    Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
+    Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
+    Nelmio\CorsBundle\NelmioCorsBundle::class => ['all' => true],
+    Symfony\Bundle\SecurityBundle\SecurityBundle::class => ['all' => true],
+    Symfony\Bundle\TwigBundle\TwigBundle::class => ['all' => true],
+    Nelmio\ApiDocBundle\NelmioApiDocBundle::class => ['all' => true],
+    Twig\Extra\TwigExtraBundle\TwigExtraBundle::class => ['all' => true],
+    Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class => ['dev' => true, 'test' => true],
+];
+</file>
+
+<file path="config/preload.php">
+<?php
+
+if (file_exists(dirname(__DIR__).'/var/cache/prod/App_KernelProdContainer.preload.php')) {
+    require dirname(__DIR__).'/var/cache/prod/App_KernelProdContainer.preload.php';
+}
+</file>
+
+<file path="config/routes.yaml">
+index:
+    path: /
+    controller: App\Controller\HomeController::home
+</file>
+
+<file path="config/services.yaml">
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+</file>
+
+<file path="migrations/.gitignore">
+
+</file>
+
+<file path="migrations/Version20230813114306.php">
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20230813114306 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql('CREATE TABLE restaurant (id INT AUTO_INCREMENT NOT NULL, name VARCHAR(32) NOT NULL, description LONGTEXT NOT NULL, am_opening_time JSON NOT NULL, pm_opening_time JSON NOT NULL, max_guest SMALLINT NOT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', updated_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\', PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql('DROP TABLE restaurant');
+    }
+}
+</file>
+
+<file path="migrations/Version20230813115543.php">
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20230813115543 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql('CREATE TABLE picture (id INT AUTO_INCREMENT NOT NULL, restaurant_id INT NOT NULL, title VARCHAR(128) NOT NULL, slug VARCHAR(128) NOT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', updated_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\', INDEX IDX_16DB4F89B1E7706E (restaurant_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('ALTER TABLE picture ADD CONSTRAINT FK_16DB4F89B1E7706E FOREIGN KEY (restaurant_id) REFERENCES restaurant (id)');
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql('ALTER TABLE picture DROP FOREIGN KEY FK_16DB4F89B1E7706E');
+        $this->addSql('DROP TABLE picture');
+    }
+}
+</file>
+
+<file path="migrations/Version20230818155000.php">
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+final class Version20230818155000 extends AbstractMigration
+{
+    public function up(Schema $schema): void
+    {
+        $this->addSql('CREATE TABLE user (id INT AUTO_INCREMENT NOT NULL, email VARCHAR(180) NOT NULL, api_token VARCHAR(255) NOT NULL, roles JSON NOT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', updated_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\', password VARCHAR(255) NOT NULL, UNIQUE INDEX UNIQ_8D93D649E7927C74 (email), UNIQUE INDEX UNIQ_8D93D6497BA2F5EB (api_token), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+    }
+
+    public function down(Schema $schema): void
+    {
+        $this->addSql('DROP TABLE user');
+    }
+}
+</file>
+
+<file path="migrations/Version20230913125559.php">
+<?php
+
+declare(strict_types=1);
+
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+/**
+ * Auto-generated Migration: Please modify to your needs!
+ */
+final class Version20230913125559 extends AbstractMigration
+{
+    public function getDescription(): string
+    {
+        return '';
+    }
+
+    public function up(Schema $schema): void
+    {
+        // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql('ALTER TABLE user ADD first_name VARCHAR(32) NOT NULL, ADD last_name VARCHAR(64) NOT NULL, ADD guest_number SMALLINT DEFAULT NULL, ADD allergy VARCHAR(255) DEFAULT NULL');
+    }
+
+    public function down(Schema $schema): void
+    {
+        // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql('ALTER TABLE user DROP first_name, DROP last_name, DROP guest_number, DROP allergy');
+    }
+}
+</file>
+
+<file path="src/Controller/.gitignore">
+
+</file>
+
+<file path="src/Controller/HomeController.php">
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+class HomeController extends AbstractController
+{
+    #[Route('/', name: 'app_home_index')]
+    public function home() : Response
+    {
+        return new Response('Bienvenue sur votre accueil !');
+    }
+}
+</file>
+
+<file path="src/Controller/RestaurantController.php">
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Restaurant;
+use App\Repository\RestaurantRepository;
+use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Annotations as OA;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\SerializerInterface;
+
+#[Route('/api/restaurant', name: 'app_api_restaurant_')]
+class RestaurantController extends AbstractController
+{
+    public function __construct(
+        private EntityManagerInterface $manager,
+        private RestaurantRepository $repository,
+        private SerializerInterface $serializer,
+        private UrlGeneratorInterface $urlGenerator,
+    ) {
+    }
+
+    #[Route(methods: 'POST')]
+    /** @OA\Post(
+     *     path="/api/restaurant",
+     *     summary="Créer un restaurant",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Données du restaurant à créer",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", example="Nom du restaurant"),
+     *             @OA\Property(property="description", type="string", example="Description du restaurant")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Restaurant créé avec succès",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="name", type="string", example="Nom du restaurant"),
+     *             @OA\Property(property="description", type="string", example="Description du restaurant"),
+     *             @OA\Property(property="createdAt", type="string", format="date-time")
+     *         )
+     *     )
+     * )
+     */
+    public function new(Request $request): JsonResponse
+    {
+        $restaurant = $this->serializer->deserialize($request->getContent(), Restaurant::class, 'json');
+        $restaurant->setCreatedAt(new DateTimeImmutable());
+
+        $this->manager->persist($restaurant);
+        $this->manager->flush();
+
+        $responseData = $this->serializer->serialize($restaurant, 'json');
+        $location = $this->urlGenerator->generate(
+            'app_api_restaurant_show',
+            ['id' => $restaurant->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL,
+        );
+
+        return new JsonResponse($responseData, Response::HTTP_CREATED, ["Location" => $location], true);
+    }
+
+    /** @OA\Get(
+     *     path="/api/restaurant/{id}",
+     *     summary="Afficher un restaurant par ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID du restaurant à afficher",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Restaurant trouvé avec succès",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="name", type="string", example="Nom du restaurant"),
+     *             @OA\Property(property="description", type="string", example="Description du restaurant"),
+     *             @OA\Property(property="createdAt", type="string", format="date-time")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Restaurant non trouvé"
+     *     )
+     * )
+     */
+    #[Route('/{id}', name: 'show', methods: 'GET')]
+    public function show(int $id): JsonResponse
+    {
+        $restaurant = $this->repository->findOneBy(['id' => $id]);
+        if ($restaurant) {
+            $responseData = $this->serializer->serialize($restaurant, 'json');
+
+            return new JsonResponse($responseData, Response::HTTP_OK, [], true);
+        }
+
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+    }
+
+    /** @OA\Put(
+     *     path="/api/restaurant/{id}",
+     *     summary="Modifier un restaurant par ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID du restaurant à modifier",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Nouvelles données du restaurant à mettre à jour",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", example="Nouveau nom du restaurant"),
+     *             @OA\Property(property="description", type="string", example="Nouvelle description du restaurant")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Restaurant modifié avec succès"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Restaurant non trouvé"
+     *     )
+     * )
+     */
+    #[Route('/{id}', name: 'edit', methods: 'PUT')]
+    public function edit(int $id, Request $request): JsonResponse
+    {
+        $restaurant = $this->repository->findOneBy(['id' => $id]);
+        if ($restaurant) {
+            $restaurant = $this->serializer->deserialize(
+                $request->getContent(),
+                Restaurant::class,
+                'json',
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $restaurant]
+            );
+            $restaurant->setUpdatedAt(new DateTimeImmutable());
+
+            $this->manager->flush();
+
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+    }
+
+    /** @OA\Delete(
+     *     path="/api/restaurant/{id}",
+     *     summary="Supprimer un restaurant par ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID du restaurant à supprimer",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Restaurant supprimé avec succès"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Restaurant non trouvé"
+     *     )
+     * )
+     */
+    #[Route('/{id}', name: 'delete', methods: 'DELETE')]
+    public function delete(int $id): JsonResponse
+    {
+        $restaurant = $this->repository->findOneBy(['id' => $id]);
+        if ($restaurant) {
+            $this->manager->remove($restaurant);
+            $this->manager->flush();
+
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+    }
+}
+</file>
+
+<file path="src/Controller/SecurityController.php">
+<?php
+
+namespace App\Controller;
+
+use App\Entity\User;
+use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Annotations as OA;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\SerializerInterface;
+
+#[Route('/api', name: 'app_api_')]
+class SecurityController extends AbstractController
+{
+    public function __construct(
+        private EntityManagerInterface $manager,
+        private SerializerInterface $serializer,
+        private UserPasswordHasherInterface $passwordHasher,
+    ) {
+    }
+
+    #[Route('/registration', name: 'registration', methods: 'POST')]
+    /** @OA\Post(
+     *     path="/api/registration",
+     *     summary="Inscription d'un nouvel utilisateur",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Données de l'utilisateur à inscrire",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="firstName", type="string", example="Thomas"),
+     *             @OA\Property(property="lastName", type="string", example="Dupont"),
+     *             @OA\Property(property="email", type="string", example="thomas@email.com"),
+     *             @OA\Property(property="password", type="string", example="Mot de passe")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Utilisateur inscrit avec succès",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="user", type="string", example="Nom d'utilisateur"),
+     *             @OA\Property(property="apiToken", type="string", example="31a023e212f116124a36af14ea0c1c3806eb9378"),
+     *             @OA\Property(property="roles", type="array", @OA\Items(type="string", example="ROLE_USER"))
+     *         )
+     *     )
+     * )
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+        $user->setPassword($this->passwordHasher->hashPassword($user, $user->getPassword()));
+        $user->setCreatedAt(new DateTimeImmutable());
+
+        $this->manager->persist($user);
+        $this->manager->flush();
+
+        return new JsonResponse(
+            ['user'  => $user->getUserIdentifier(), 'apiToken' => $user->getApiToken(), 'roles' => $user->getRoles()],
+            Response::HTTP_CREATED
+        );
+    }
+
+    #[Route('/login', name: 'login', methods: 'POST')]
+    /** @OA\Post(
+     *     path="/api/login",
+     *     summary="Connecter un utilisateur",
+     *     @OA\RequestBody(
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *              @OA\Schema(
+     *                  type="object",
+     *                  required={"username", "password"},
+     *                  @OA\Property(property="username", type="string"),
+     *                  @OA\Property(property="password", type="string")
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Connexion réussie",
+     *          @OA\JsonContent(
+     *              type="object",
+     *              @OA\Property(property="X-AUTH-TOKEN", type="string")
+     *          )
+     *      )
+     * )
+     */
+    public function login(#[CurrentUser] ?User $user): JsonResponse
+    {
+        if (null === $user) {
+            return new JsonResponse(['message' => 'Missing credentials'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        return new JsonResponse([
+            'user'  => $user->getUserIdentifier(),
+            'apiToken' => $user->getApiToken(),
+            'roles' => $user->getRoles(),
+        ]);
+    }
+
+    #[Route('/account/me', name: 'me', methods: 'GET')]
+    /** @OA\Get(
+     *     path="/api/account/me",
+     *     summary="Récupérer toutes les informations de l'objet User",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Tous les champs utilisateurs retournés",
+     *     )
+     * )
+     */
+    public function me(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        $responseData = $this->serializer->serialize($user, 'json');
+
+        return new JsonResponse($responseData, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/account/edit', name: 'edit', methods: 'PUT')]
+    /** @OA\Put(
+     *     path="/api/account/edit",
+     *     summary="Modifier son compte utilisateur avec l'un ou tous les champs",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Nouvelles données éventuelles de l'utilisateur à mettre à jour",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="firstName", type="string", example="Nouveau prénom"),
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Utilisateur modifié avec succès"
+     *     )
+     * )
+     */
+    public function edit(Request $request): JsonResponse
+    {
+        $user = $this->serializer->deserialize(
+            $request->getContent(),
+            User::class,
+            'json',
+            [AbstractNormalizer::OBJECT_TO_POPULATE => $this->getUser()],
+        );
+        $user->setUpdatedAt(new DateTimeImmutable());
+
+        if (isset($request->toArray()['password'])) {
+            $user->setPassword($this->passwordHasher->hashPassword($user, $user->getPassword()));
+        }
+
+        $this->manager->flush();
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+}
+</file>
+
+<file path="src/DataFixtures/PictureFixtures.php">
+<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\{Picture, Restaurant};
+use App\Service\Utils;
+use DateTimeImmutable;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
+use Doctrine\Persistence\ObjectManager;
+use Exception;
+
+class PictureFixtures extends Fixture implements DependentFixtureInterface
+{
+    /** @throws Exception */
+    public function load(ObjectManager $manager): void
+    {
+        for ($i = 1; $i <= RestaurantFixtures::RESTAURANT_NB_TUPLES; $i++) {
+            /** @var Restaurant $restaurant */
+            $restaurant = $this->getReference(
+                RestaurantFixtures::RESTAURANT_REFERENCE . random_int(1, RestaurantFixtures::RESTAURANT_NB_TUPLES)
+            );
+            $title = "Article n°$i";
+
+            $picture = (new Picture())
+                ->setTitle($title)
+                ->setSlug(Utils::slugify($title))
+                ->setRestaurant($restaurant)
+                ->setCreatedAt(new DateTimeImmutable());
+
+            $manager->persist($picture);
+        }
+
+        $manager->flush();
+    }
+
+    public function getDependencies(): array
+    {
+        return [RestaurantFixtures::class];
+    }
+}
+</file>
+
+<file path="src/DataFixtures/RestaurantFixtures.php">
+<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\Restaurant;
+use DateTimeImmutable;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+use Exception;
+use Faker;
+
+class RestaurantFixtures extends Fixture
+{
+    public const RESTAURANT_REFERENCE = 'restaurant-';
+    public const RESTAURANT_NB_TUPLES = 10;
+
+    /** @throws Exception */
+    public function load(ObjectManager $manager): void
+    {
+        $faker = Faker\Factory::create();
+
+        for ($i = 1; $i <= self::RESTAURANT_NB_TUPLES; $i++) {
+            $restaurant = (new Restaurant())
+                ->setName("Restaurant n°$i")
+                ->setDescription($faker->text())
+                ->setAmOpeningTime([])
+                ->setPmOpeningTime([])
+                ->setMaxGuest(random_int(10, 50))
+                ->setCreatedAt(new DateTimeImmutable());
+
+            $manager->persist($restaurant);
+            $this->addReference(self::RESTAURANT_REFERENCE . $i, $restaurant);
+        }
+
+        $manager->flush();
+    }
+}
+</file>
+
+<file path="src/DataFixtures/UserFixtures.php">
+<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\User;
+use DateTimeImmutable;
+use Doctrine\Bundle\FixturesBundle\{Fixture, FixtureGroupInterface};
+use Doctrine\Persistence\ObjectManager;
+use Exception;
+use Faker;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
+class UserFixtures extends Fixture implements FixtureGroupInterface
+{
+    public const USER_NB_TUPLES = 20;
+
+    public function __construct(private UserPasswordHasherInterface $passwordHasher)
+    {
+    }
+
+    /** @throws Exception */
+    public function load(ObjectManager $manager): void
+    {
+        $faker = Faker\Factory::create();
+
+        for ($i = 1; $i <= self::USER_NB_TUPLES; $i++) {
+            $user = (new User())
+                ->setFirstName($faker->firstName())
+                ->setLastName($faker->lastName())
+                ->setGuestNumber(random_int(0,5))
+                ->setEmail("email.$i@studi.fr")
+                ->setCreatedAt(new DateTimeImmutable());
+
+            $user->setPassword($this->passwordHasher->hashPassword($user, 'password' . $i));
+
+            $manager->persist($user);
+        }
+
+        $manager->flush();
+    }
+
+    public static function getGroups(): array
+    {
+        return ['independent'];
+    }
+}
+</file>
+
+<file path="src/Entity/.gitignore">
+
+</file>
+
+<file path="src/Entity/Picture.php">
+<?php
+
+namespace App\Entity;
+
+use App\Repository\PictureRepository;
+use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: PictureRepository::class)]
+class Picture
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: "IDENTITY")]
+    #[ORM\Column(type: "integer")]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 128)]
+    private ?string $title = null;
+
+    #[ORM\Column(length: 128)]
+    private ?string $slug = null;
+
+    #[ORM\Column]
+    private ?DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $updatedAt = null;
+
+    #[ORM\ManyToOne(inversedBy: 'pictures')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Restaurant $restaurant = null;
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): static
+    {
+        $this->slug = $slug;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getRestaurant(): ?Restaurant
+    {
+        return $this->restaurant;
+    }
+
+    public function setRestaurant(?Restaurant $restaurant): static
+    {
+        $this->restaurant = $restaurant;
+
+        return $this;
+    }
+}
+</file>
+
+<file path="src/Entity/Restaurant.php">
+<?php
+
+namespace App\Entity;
+
+use App\Repository\RestaurantRepository;
+use DateTimeImmutable;
+use Doctrine\Common\Collections\{ArrayCollection, Collection};
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: RestaurantRepository::class)]
+class Restaurant
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: "IDENTITY")]
+    #[ORM\Column(type: "integer")]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 32)]
+    private ?string $name = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $description = null;
+
+    #[ORM\Column]
+    private array $amOpeningTime = [];
+
+    #[ORM\Column]
+    private array $pmOpeningTime = [];
+
+    #[ORM\Column(type: Types::SMALLINT)]
+    private int $maxGuest = 0;
+
+    #[ORM\Column]
+    private ?DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $updatedAt = null;
+
+    #[ORM\OneToMany(mappedBy: 'restaurant', targetEntity: Picture::class, orphanRemoval: true)]
+    private Collection $pictures;
+
+    public function __construct()
+    {
+        $this->pictures = new ArrayCollection();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getAmOpeningTime(): array
+    {
+        return $this->amOpeningTime;
+    }
+
+    public function setAmOpeningTime(array $amOpeningTime): static
+    {
+        $this->amOpeningTime = $amOpeningTime;
+
+        return $this;
+    }
+
+    public function getPmOpeningTime(): array
+    {
+        return $this->pmOpeningTime;
+    }
+
+    public function setPmOpeningTime(array $pmOpeningTime): static
+    {
+        $this->pmOpeningTime = $pmOpeningTime;
+
+        return $this;
+    }
+
+    public function getMaxGuest(): int
+    {
+        return $this->maxGuest;
+    }
+
+    public function setMaxGuest(int $maxGuest): static
+    {
+        $this->maxGuest = $maxGuest;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Picture> */
+    public function getPictures(): Collection
+    {
+        return $this->pictures;
+    }
+
+    public function addPicture(Picture $picture): static
+    {
+        if (!$this->pictures->contains($picture)) {
+            $this->pictures->add($picture);
+            $picture->setRestaurant($this);
+        }
+
+        return $this;
+    }
+
+    public function removePicture(Picture $picture): static
+    {
+        if ($this->pictures->removeElement($picture) && $picture->getRestaurant() === $this) {
+            $picture->setRestaurant(null);
+        }
+
+        return $this;
+    }
+}
+</file>
+
+<file path="src/Entity/User.php">
+<?php
+
+namespace App\Entity;
+
+use App\Repository\UserRepository;
+use DateTimeImmutable;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: "IDENTITY")]
+    #[ORM\Column(type: "integer")]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 32)]
+    private ?string $firstName = null;
+
+    #[ORM\Column(length: 64)]
+    private ?string $lastName = null;
+
+    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
+    private ?int $guestNumber = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $allergy = null;
+
+    #[ORM\Column(length: 180, unique: true)]
+    private ?string $email = null;
+
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $apiToken;
+
+    #[ORM\Column]
+    private array $roles = [];
+
+    #[ORM\Column]
+    private ?DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $updatedAt = null;
+
+    /** @var string|null The hashed password */
+    #[ORM\Column]
+    private ?string $password = null;
+
+    /** @throws \Exception */
+    public function __construct()
+    {
+        $this->apiToken = bin2hex(random_bytes(20));
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getFirstName(): ?string
+    {
+        return $this->firstName;
+    }
+
+    public function setFirstName(string $firstName): static
+    {
+        $this->firstName = $firstName;
+
+        return $this;
+    }
+
+    public function getLastName(): ?string
+    {
+        return $this->lastName;
+    }
+
+    public function setLastName(string $lastName): static
+    {
+        $this->lastName = $lastName;
+
+        return $this;
+    }
+
+    public function getGuestNumber(): ?int
+    {
+        return $this->guestNumber;
+    }
+
+    public function setGuestNumber(?int $guestNumber): static
+    {
+        $this->guestNumber = $guestNumber;
+
+        return $this;
+    }
+
+    public function getAllergy(): ?string
+    {
+        return $this->allergy;
+    }
+
+    public function setAllergy(?string $allergy): static
+    {
+        $this->allergy = $allergy;
+
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): static
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    public function getApiToken(): ?string
+    {
+        return $this->apiToken;
+    }
+
+    public function setApiToken(string $apiToken): static
+    {
+        $this->apiToken = $apiToken;
+
+        return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    /** @deprecated since Symfony 5.3, use getUserIdentifier instead */
+    public function getUsername(): string
+    {
+        return (string) $this->email;
+    }
+
+    /** @see UserInterface */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /** @see PasswordAuthenticatedUserInterface */
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): static
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /**
+     * Returning a salt is only needed, if you are not using a modern
+     * hashing algorithm (e.g. bcrypt or sodium) in your security.yaml.
+     *
+     * @see UserInterface
+     */
+    public function getSalt(): ?string
+    {
+        return null;
+    }
+
+    /** @see UserInterface */
+    public function eraseCredentials(): void
+    {
+    }
+}
+</file>
+
+<file path="src/Repository/.gitignore">
+
+</file>
+
+<file path="src/Repository/PictureRepository.php">
+<?php
+
+namespace App\Repository;
+
+use App\Entity\Picture;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<Picture>
+ *
+ * @method Picture|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Picture|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Picture[]    findAll()
+ * @method Picture[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ */
+class PictureRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, Picture::class);
+    }
+}
+</file>
+
+<file path="src/Repository/RestaurantRepository.php">
+<?php
+
+namespace App\Repository;
+
+use App\Entity\Restaurant;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<Restaurant>
+ *
+ * @method Restaurant|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Restaurant|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Restaurant[]    findAll()
+ * @method Restaurant[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ */
+class RestaurantRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, Restaurant::class);
+    }
+}
+</file>
+
+<file path="src/Repository/UserRepository.php">
+<?php
+
+namespace App\Repository;
+
+use App\Entity\User;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+
+/**
+ * @extends ServiceEntityRepository<User>
+ *
+ * @implements PasswordUpgraderInterface<User>
+ *
+ * @method User|null find($id, $lockMode = null, $lockVersion = null)
+ * @method User|null findOneBy(array $criteria, array $orderBy = null)
+ * @method User[]    findAll()
+ * @method User[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ */
+class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, User::class);
+    }
+
+    /** Used to upgrade (rehash) the user's password automatically over time. */
+    public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
+    {
+        if (!$user instanceof User) {
+            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', $user::class));
+        }
+
+        $user->setPassword($newHashedPassword);
+        $this->getEntityManager()->persist($user);
+        $this->getEntityManager()->flush();
+    }
+}
+</file>
+
+<file path="src/Security/ApiTokenAuthenticator.php">
+<?php
+
+namespace App\Security;
+
+use App\Repository\UserRepository;
+use Symfony\Component\HttpFoundation\{JsonResponse, Request, Response};
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\{
+    AuthenticationException,
+    CustomUserMessageAuthenticationException,
+    UserNotFoundException
+};
+use Symfony\Component\Security\Http\Authenticator\{AbstractAuthenticator,
+    Passport\Badge\UserBadge,
+    Passport\Passport,
+    Passport\SelfValidatingPassport};
+
+class ApiTokenAuthenticator extends AbstractAuthenticator
+{
+    public function __construct(private UserRepository $repository)
+    {
+    }
+
+    public function supports(Request $request): ?bool
+    {
+        return $request->headers->has('X-AUTH-TOKEN');
+    }
+
+    public function authenticate(Request $request): Passport
+    {
+        $apiToken = $request->headers->get('X-AUTH-TOKEN');
+        if (null === $apiToken) {
+            throw new CustomUserMessageAuthenticationException('No API token provided');
+        }
+
+        $user = $this->repository->findOneBy(['apiToken' => $apiToken]);
+        if (null === $user) {
+            throw new UserNotFoundException();
+        }
+
+        return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier()));
+    }
+
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    {
+        return null;
+    }
+
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
+    {
+        return new JsonResponse(
+            ['message' => strtr($exception->getMessageKey(), $exception->getMessageData())],
+            Response::HTTP_UNAUTHORIZED
+        );
+    }
+}
+</file>
+
+<file path="src/Service/Utils.php">
+<?php
+
+namespace App\Service;
+
+class Utils
+{
+    public static function slugify(string $text, string $divider = '-'): string
+    {
+        $text = preg_replace('/[^\pL\d]+/u', $divider, $text); // Remplace les caractères non alphabétiques ou non numériques par le séparateur
+        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text); // Translitération
+        $text = preg_replace('/[^-\w]+/', '', $text); // Supprime les caractères indésirables
+        $text = trim($text, $divider); // Supprime les espaces aux extrémités et les séparateurs en excès
+        $text = preg_replace('/-+/', $divider, $text); // Supprime les séparateurs en excès
+        $text = strtolower($text); // Met en minuscules
+
+        return empty($text) ? 'n-a' : $text; // Retourne 'n-a' si la chaîne est vide, sinon retourne la chaîne
+    }
+}
+</file>
+
+<file path="src/Kernel.php">
+<?php
+
+namespace App;
+
+use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Component\HttpKernel\Kernel as BaseKernel;
+
+class Kernel extends BaseKernel
+{
+    use MicroKernelTrait;
+}
+</file>
+
+<file path="templates/base.html.twig">
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+        {% endblock %}
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+    </body>
+</html>
+</file>
+
+<file path="tests/Controller/SmokeTest.php">
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+/** @group Functional */
+final class SmokeTest extends WebTestCase
+{
+    public function testApiDocUrlIsSuccessful(): void
+    {
+        $client = self::createClient();
+        $client->followRedirects(false);
+        $client->request('GET', '/api/doc');
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testApiAccountUrlIsSecure(): void
+    {
+        $client = self::createClient();
+        $client->followRedirects(false);
+        $client->request('GET', '/api/account/me');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testLoginRouteCanConnectAValidUser(): void
+    {
+        $client = self::createClient();
+        $client->followRedirects(false);
+
+        $client->request('POST', '/api/login', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode([
+            'username' => 'pierre.dupont@studi.exemple',
+            'password' => 'pierre2023',
+        ], JSON_THROW_ON_ERROR));
+
+        $statusCode = $client->getResponse()->getStatusCode();
+        $content = $client->getResponse()->getContent();
+
+        $this->assertEquals(200, $statusCode);
+        $this->assertStringContainsString('user', $content);
+        $this->assertStringContainsString('apiToken', $content);
+        $this->assertStringContainsString('roles', $content);
+
+        self::assertResponseIsSuccessful();
+    }
+}
+</file>
+
+<file path="tests/Entity/UserTest.php">
+<?php
+
+namespace App\Tests\Entity;
+
+use App\Entity\User;
+use PHPUnit\Framework\TestCase;
+
+class UserTest extends TestCase
+{
+    public function testTheAutomaticApiTokenSettingWhenAnUserIsCreated(): void
+    {
+        $user = new User();
+        $this->assertNotNull($user->getApiToken());
+    }
+
+    public function testThanAnUserHasAtLeastOneRoleUser(): void
+    {
+        $user = new User();
+        $this->assertContains('ROLE_USER', $user->getRoles());
+    }
+
+    public function testAnException(): void
+    {
+        $this->expectException(\TypeError::class);
+
+        $user = new User();
+        $user->setFirstName([10]);
+    }
+
+    public function provideFirstName(): \Generator
+    {
+        yield ['Thomas'];
+        yield ['Eric'];
+        yield ['Marie'];
+    }
+
+    /** @dataProvider provideFirstName */
+    public function testFirstNameSetter(string $name): void
+    {
+        $user = new User();
+        $user->setFirstName($name);
+
+        $this->assertSame($name, $user->getFirstName());
+    }
+}
+</file>
+
+<file path="tests/bootstrap.php">
+<?php
+
+use Symfony\Component\Dotenv\Dotenv;
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+if (file_exists(dirname(__DIR__).'/config/bootstrap.php')) {
+    require dirname(__DIR__).'/config/bootstrap.php';
+} elseif (method_exists(Dotenv::class, 'bootEnv')) {
+    (new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
+}
+</file>
+
+<file path=".env.test">
+# define your env variables for the test env here
+KERNEL_CLASS='App\Kernel'
+APP_SECRET='$ecretf0rt3st'
+SYMFONY_DEPRECATIONS_HELPER=999999
+PANTHER_APP_ENV=panther
+PANTHER_ERROR_SCREENSHOT_DIR=./var/error-screenshots
+</file>
+
+<file path=".gitignore">
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+.phpunit.result.cache
+###< phpunit/phpunit ###
+</file>
+
+<file path="CODE_OF_CONDUCT.md">
+Code of Conduct
+===============
+
+Our Pledge
+----------
+
+We, as maintainers, pledge to making participation in our project and
+our community a harassment-free experience for everyone, regardless of age, body
+size, disability, ethnic origin, gender identity and expression, level of
+experience, education, socio-economic status, nationality, personal appearance,
+religion, or sexual identity and orientation.
+
+Our Standards
+-------------
+
+Examples of behavior that contributes to creating a positive environment
+include:
+
+* Using welcoming and inclusive language
+* Being respectful of differing viewpoints and experiences
+* Gracefully accepting constructive criticism
+* Focusing on what is best for the company
+* Showing empathy towards other company members
+
+Examples of unacceptable behavior by participants include:
+
+* The use of sexualized language or imagery and unwelcome sexual attention or
+  advances
+* Trolling, insulting/derogatory comments, and personal or political attacks
+* Public or private harassment
+* Publishing others' private information, such as a physical or electronic
+  address, without explicit permission
+* Other conduct which could reasonably be considered inappropriate in a
+  professional setting
+
+Our Responsibilities
+--------------------
+
+STUDI are responsible for clarifying the
+standards of acceptable behavior and are expected to take appropriate and fair
+corrective action in response to any instances of unacceptable behavior.
+
+They have the right and responsibility to remove, edit, or reject
+comments, commits, code, wiki edits, issues, and other contributions that are
+not aligned to this Code of Conduct, or to ban temporarily or permanently any
+contributor for other behaviors that they deem inappropriate, threatening,
+offensive, or harmful.
+
+Scope
+-----
+
+This Code of Conduct applies both within project spaces and in public spaces
+when an individual is representing the project or its community. Examples of
+representing a project or community include using an official project e-mail
+address, posting via an official social media account, or acting as an appointed
+representative at an online or offline event.
+
+Enforcement
+-----------
+
+All complaints will be reviewed and investigated by STUDI and will result in a response that is deemed necessary and
+appropriate to the circumstances. They are obligated to maintain confidentiality
+with regard to the reporter of an incident. Further details of specific
+enforcement policies may be posted separately.
+
+Company members who do not follow or enforce the Code of Conduct in good
+faith may face temporary or permanent repercussions.
+
+Attribution
+-----------
+
+This Code of Conduct is adapted from the [Contributor Covenant version 2.1][1].
+
+[1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct/
+</file>
+
+<file path="CONTRIBUTING.md">
+Contributing
+============
+
+This project is not an open source project.
+Contributions or shares are completely forbidden.
+Each developer working on this project has signed a contract about GDPR and ownership of the created code.
+</file>
+
+<file path="php.ini">
+allow_url_include=off
+assert.active=off
+display_errors=off
+display_startup_errors=off
+max_execution_time=30
+session.use_strict_mode=On
+realpath_cache_ttl=3600
+zend.detect_unicode=Off
+</file>
+
+<file path="phpunit.xml.dist">
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         backupGlobals="false"
+         colors="true"
+         bootstrap="tests/bootstrap.php"
+         convertDeprecationsToExceptions="false"
+>
+    <php>
+        <ini name="display_errors" value="1" />
+        <ini name="error_reporting" value="-1" />
+        <server name="APP_ENV" value="test" force="true" />
+        <server name="SHELL_VERBOSITY" value="-1" />
+        <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
+        <server name="SYMFONY_PHPUNIT_VERSION" value="9.5" />
+    </php>
+
+    <testsuites>
+        <testsuite name="Project Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">src</directory>
+        </include>
+    </coverage>
+
+    <listeners>
+        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
+    </listeners>
+
+    <extensions>
+    </extensions>
+</phpunit>
+</file>
+
+<file path="README.md">
+# studi-restaurant-symfony-lts-api
+
+**This repository is a simple project use for STUDI courses written with the last version of Symfony.**
+
+```
+/*
+ * Copyright (C) STUDI, Inc - All Rights Reserved.
+ * Unauthorized copying of this repository, via any medium is strictly prohibited.
+ * Proprietary and confidential.
+ * Written by Gaetan Rolé-Dubruille <gaetan.role@gmail.com>.
+ */
+```
+
+[![Author](https://img.shields.io/badge/author-gaetan.role%40gmail.com-blue.svg)](https://github.com/gaetanrole)
+
+## Documentation
+
+Before the development, **be sure to be comfortable with your current work environment**.
+Like to setup your IDE, install all necessary plugins, prepare your keyboard shortcuts, create your Bash aliases etc...
+
+- [Awesome dotfiles](https://github.com/webpro/awesome-dotfiles)
+- [Lean and mean dev with PHPStorm](https://symfonycasts.com/screencast/phpstorm)
+
+As soon as everything is ready, you can read some docs during the development.
+Take a look below !
+
+- [Tools helping developers every day](https://www.youtube.com/watch?v=_OEDoPMvNY4)
+- [Symfony Fast Track](https://symfony.com/doc/6.2/the-fast-track/fr/index.html)
+
+## Installation instructions
+
+### Project requirements
+
+- [PHP >=7.2.5 or higher](http://php.net/manual/fr/install.php)
+- [SQL >=8.0](https://www.mysql.com/fr/downloads/)
+- [Symfony CLI](https://symfony.com/download)
+- [Composer](https://getcomposer.org/download)
+- [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- PHP extensions such as : Iconv, JSON, PCRE, Session, Tokenizer and the [usual Symfony application requirements][1].
+
+```bash
+$ symfony check:requirements # To check minimal requirements for the project
+```
+
+### View
+
+![Symfony view](./studi-restaurant-view.png "Symfony configuration view")
+
+### Installation
+
+1 . **Register a GPG/SSH Key into your Gitlab/Github account** to push verified commits and registry images.
+
+2 . Clone the current repository (SSH):
+```bash
+$ git clone 'git@github.com:GaetanRole/studi-restaurant-symfony-lts-api.git'
+```
+
+3 . Move in and create few `.env.{environment}.local` files, according to your environments with your default configuration.
+**.local files are not committed to the shared repository.**
+
+```bash
+$ cp .env .env.local   # Create .env.$APP_ENV.local files. Complete them with your configuration.
+```
+
+> `.env` equals to the last `.env.dist` file before [november 2018][2].
+
+4 . Set your DATABASE_URL in `.env.{environment}.local` files and run these commands :
+
+```bash
+$ composer install        # Install all PHP packages
+$ php bin/console d:d:c   # Create your DATABASE related to your .env.local configuration
+$ php bin/console d:m:m   # Run migrations to setup your DATABASE according to your entities
+```
+
+## Workflow
+
+Each course is related to one branch. 
+If you want to know what modification was made, you have to compare the previous branch with the new one.
+
+The ``[main]`` branch is always up to date with all courses.
+
+## Usage
+
+```bash
+$ symfony server:start    # Use this command to start a local server.
+```
+
+To see all available routes, services... :
+
+```bash
+$ bin/console debug:router
+$ bin/console debug:container
+$ bin/console debug:...
+```
+
+## Continuous deployment
+
+This project can be easily hosted on Platform.SH :
+
+<p align="center">
+<a href="https://auth.api.platform.sh/"><img src="https://platform.sh/images/deploy/lg-blue.svg" alt="Deploy on Platform.sh" width="180px" /></a>
+</p>
+
+```bash
+$ symfony project:set-remote [PROJECT_ID]
+$ symfony cloud:environment:push
+```
+
+## Contributing
+
+Zero contribution is allowed. This software is private for STUDI and STUDI students.
+
+[1]: https://symfony.com/doc/current/reference/requirements.html
+[2]: https://symfony.com/doc/current/configuration.html#the-env-file-environment-variables
+
+[⬆️ Back to top](#studi-restaurant-symfony-lts-api)
+</file>
+
+<file path="bin/console">
+#!/usr/bin/env php
+<?php
+
+use App\Kernel;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+
+if (!is_file(dirname(__DIR__).'/vendor/autoload_runtime.php')) {
+    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
+}
+
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
+
+return function (array $context) {
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+
+    return new Application($kernel);
+};
+</file>
+
+<file path="symfony.lock">
+{
+    "doctrine/annotations": {
+        "version": "2.0",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "a2759dd6123694c8d901d0ec80006e044c2e6457"
+        },
+        "files": [
+            "config/routes/annotations.yaml"
+        ]
+    },
+    "doctrine/deprecations": {
+        "version": "1.1",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "fdd756167454623e21f1d769c5b814b243782a67"
+        }
+    },
+    "doctrine/doctrine-bundle": {
+        "version": "2.10",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "2.4",
+            "ref": "013b823e7fee65890b23e40f31e6667a1ac519ac"
+        },
+        "files": [
+            "config/packages/doctrine.yaml",
+            "src/Entity/.gitignore",
+            "src/Repository/.gitignore"
+        ]
+    },
+    "doctrine/doctrine-fixtures-bundle": {
+        "version": "3.5",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "3.0",
+            "ref": "1f5514cfa15b947298df4d771e694e578d4c204d"
+        },
+        "files": [
+            "src/DataFixtures/AppFixtures.php"
+        ]
+    },
+    "doctrine/doctrine-migrations-bundle": {
+        "version": "3.2",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "3.1",
+            "ref": "1d01ec03c6ecbd67c3375c5478c9a423ae5d6a33"
+        },
+        "files": [
+            "config/packages/doctrine_migrations.yaml",
+            "migrations/.gitignore"
+        ]
+    },
+    "nelmio/api-doc-bundle": {
+        "version": "4.12",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "3.0",
+            "ref": "c8e0c38e1a280ab9e37587a8fa32b251d5bc1c94"
+        },
+        "files": [
+            "config/packages/nelmio_api_doc.yaml",
+            "config/routes/nelmio_api_doc.yaml"
+        ]
+    },
+    "nelmio/cors-bundle": {
+        "version": "2.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.5",
+            "ref": "6bea22e6c564fba3a1391615cada1437d0bde39c"
+        },
+        "files": [
+            "config/packages/nelmio_cors.yaml"
+        ]
+    },
+    "phpunit/phpunit": {
+        "version": "9.6",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "9.6",
+            "ref": "7364a21d87e658eb363c5020c072ecfdc12e2326"
+        },
+        "files": [
+            ".env.test",
+            "phpunit.xml.dist",
+            "tests/bootstrap.php"
+        ]
+    },
+    "symfony/console": {
+        "version": "5.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.3",
+            "ref": "da0c8be8157600ad34f10ff0c9cc91232522e047"
+        },
+        "files": [
+            "bin/console"
+        ]
+    },
+    "symfony/flex": {
+        "version": "2.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "146251ae39e06a95be0fe3d13c807bcf3938b172"
+        },
+        "files": [
+            ".env"
+        ]
+    },
+    "symfony/framework-bundle": {
+        "version": "5.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.4",
+            "ref": "3cd216a4d007b78d8554d44a5b1c0a446dab24fb"
+        },
+        "files": [
+            "config/packages/cache.yaml",
+            "config/packages/framework.yaml",
+            "config/preload.php",
+            "config/routes/framework.yaml",
+            "config/services.yaml",
+            "public/index.php",
+            "src/Controller/.gitignore",
+            "src/Kernel.php"
+        ]
+    },
+    "symfony/maker-bundle": {
+        "version": "1.50",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "fadbfe33303a76e25cb63401050439aa9b1a9c7f"
+        }
+    },
+    "symfony/phpunit-bridge": {
+        "version": "6.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "6.3",
+            "ref": "01dfaa98c58f7a7b5a9b30e6edb7074af7ed9819"
+        },
+        "files": [
+            ".env.test",
+            "bin/phpunit",
+            "phpunit.xml.dist",
+            "tests/bootstrap.php"
+        ]
+    },
+    "symfony/routing": {
+        "version": "5.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.3",
+            "ref": "85de1d8ae45b284c3c84b668171d2615049e698f"
+        },
+        "files": [
+            "config/packages/routing.yaml",
+            "config/routes.yaml"
+        ]
+    },
+    "symfony/security-bundle": {
+        "version": "5.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.3",
+            "ref": "98f1f2b0d635908c2b40f3675da2d23b1a069d30"
+        },
+        "files": [
+            "config/packages/security.yaml"
+        ]
+    },
+    "symfony/twig-bundle": {
+        "version": "5.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.4",
+            "ref": "bb2178c57eee79e6be0b297aa96fc0c0def81387"
+        },
+        "files": [
+            "config/packages/twig.yaml",
+            "templates/base.html.twig"
+        ]
+    },
+    "twig/extra-bundle": {
+        "version": "v3.7.1"
+    }
+}
+</file>
+
+<file path="public/index.php">
+<?php
+
+use App\Kernel;
+
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
+
+return function (array $context) {
+    return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+};
+</file>
+
+<file path="composer.json">
+{
+    "type": "project",
+    "license": "proprietary",
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.1,<8.3",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "ext-pdo_mysql": "*",
+        "doctrine/doctrine-bundle": "^2.10",
+        "doctrine/doctrine-migrations-bundle": "^3.2",
+        "doctrine/orm": "^2.16",
+        "fakerphp/faker": "^1.23",
+        "nelmio/api-doc-bundle": "^4.12",
+        "nelmio/cors-bundle": "^2.3",
+        "phpdocumentor/reflection-docblock": "^5.3",
+        "phpstan/phpdoc-parser": "^1.23",
+        "symfony/asset": "5.4.*",
+        "symfony/console": "5.4.*",
+        "symfony/dotenv": "5.4.*",
+        "symfony/flex": "^1.17|^2",
+        "symfony/framework-bundle": "5.4.*",
+        "symfony/property-access": "5.4.*",
+        "symfony/property-info": "5.4.*",
+        "symfony/runtime": "5.4.*",
+        "symfony/security-bundle": "5.4.*",
+        "symfony/serializer": "5.4.*",
+        "symfony/twig-bundle": "5.4.*",
+        "symfony/yaml": "5.4.*",
+        "twig/extra-bundle": "^2.12|^3.0",
+        "twig/twig": "^2.12|^3.0"
+    },
+    "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^3.5",
+        "phpunit/phpunit": "^9.5",
+        "roave/security-advisories": "dev-latest",
+        "symfony/browser-kit": "5.4.*",
+        "symfony/css-selector": "5.4.*",
+        "symfony/maker-bundle": "^1.50",
+        "symfony/phpunit-bridge": "^6.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true,
+            "php-http/discovery": true,
+            "symfony/flex": true,
+            "symfony/runtime": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    },
+    "replace": {
+        "symfony/polyfill-ctype": "*",
+        "symfony/polyfill-iconv": "*",
+        "symfony/polyfill-php72": "*"
+    },
+    "scripts": {
+        "auto-scripts": {
+            "cache:clear": "symfony-cmd",
+            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+        },
+        "post-install-cmd": [
+            "@auto-scripts"
+        ],
+        "post-update-cmd": [
+            "@auto-scripts"
+        ]
+    },
+    "conflict": {
+        "symfony/symfony": "*"
+    },
+    "extra": {
+        "symfony": {
+            "allow-contrib": false,
+            "require": "5.4.*"
+        }
+    }
+}
+</file>
+
+</files>
