@@ -1,7 +1,10 @@
 const tokenCookieName = "accesstoken";
 const signoutBtn = document.getElementById('signout-btn');
 const RoleCookieName = "role";
-const apiUrl = "http://127.0.0.1:8000/api/";
+const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const apiUrl = isLocal
+    ? "http://127.0.0.1:8000/api/"
+    : "https://quaiantique17-back.alwaysdata.net/api/";
 
 signoutBtn.addEventListener("click", signout);
 
