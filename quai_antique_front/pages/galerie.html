@@ -5,12 +5,12 @@
 </div>
 
 <div class="container">
-    <div class="text-center">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#EditionPhotoModal">Ajouter
-            une photo</button>
+    <div class="text-center" data-show="admin">
+        <button type="button" class="btn btn-primary" id="btn-add-photo" data-bs-toggle="modal"
+            data-bs-target="#EditionPhotoModal">Ajouter une photo</button>
     </div>
     <div class="row row-cols-2 row-cols-lg-3" id="allImages">
-        
+
     </div>
     <div class="text-center pt-4">
         <a href="/reserver" class="btn btn-primary">Réserver une table</a>
@@ -27,18 +27,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="photoForm" novalidate>
                     <div class="mb-3">
                         <label for="NamePhotoInput" class="form-label">Titre</label>
-                        <input type="text" class="form-control" id="NamePhotoInput"
+                        <input type="text" class="form-control" id="NamePhotoInput" maxlength="128"
                             placeholder="Lasagnes à la bolognese" name="Titre">
                     </div>
                     <div class="mb-3">
-                        <label for="ImageInput" class="form-label">Image</label>
-                        <input type="file" class="form-control" id="ImageInput" name="Image">
+                        <label for="ImageInput" class="form-label">Fichier image</label>
+                        <input type="text" class="form-control" id="ImageInput" maxlength="128"
+                            placeholder="saumon.png" name="Image" aria-describedby="ImageHelp">
+                        <div id="ImageHelp" class="form-text">Nom d'un fichier présent dans le dossier images du site.
+                        </div>
                     </div>
+                    <p class="text-danger d-none" id="photo-error" role="alert"></p>
                     <div class="text-center">
-                        <button type="button" class="btn btn-primary">Enregistrer</button>
+                        <button type="submit" class="btn btn-primary" id="btn-save-photo">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -51,20 +55,18 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title fs-5" id="DeletePhotoModalLabel">êtes-vous sûr de vouloir supprimer cette Photo ?
+                <h2 class="modal-title fs-5" id="DeletePhotoModalLabel">Êtes-vous sûr de vouloir supprimer cette photo ?
                 </h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
-                    <div class="mb-3">
-                        <p>Titre</p>
-                        <img src="../images/salle-jour.png" class="rounded w-100" />
-                        <div class="text-center">
-                            <button type="button" class="btn btn-danger">Supprimer</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        </div>
-                </form>
+                <p id="delete-photo-title"></p>
+                <img src="" alt="" class="rounded w-100" id="delete-photo-image" />
+                <p class="text-danger d-none pt-2" id="delete-photo-error" role="alert"></p>
+                <div class="text-center pt-3">
+                    <button type="button" class="btn btn-danger" id="btn-confirm-delete-photo">Supprimer</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                </div>
             </div>
         </div>
     </div>

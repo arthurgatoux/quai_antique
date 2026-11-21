@@ -1,27 +1,126 @@
-const galerieImage = document.getElementById("allImages");
+(() => {
+    const container = document.getElementById("allImages");
+    const editModal = document.getElementById("EditionPhotoModal");
+    const deleteModal = document.getElementById("DeletePhotoModal");
+    const photoForm = document.getElementById("photoForm");
+    const titleInput = document.getElementById("NamePhotoInput");
+    const fileInput = document.getElementById("ImageInput");
+    const editTitle = document.getElementById("EditionPhotoModalLabel");
+    const editError = document.getElementById("photo-error");
+    const deleteTitle = document.getElementById("delete-photo-title");
+    const deleteImage = document.getElementById("delete-photo-image");
+    const deleteError = document.getElementById("delete-photo-error");
 
-//Récupérer les informations des images 
+    let editedId = null;
+    let deletedId = null;
 
-let titre = 'Nos saumons';
-let imgSource = "../images/saumon.png";
+    const imageUrl = (slug) => "/images/" + encodeURIComponent(slug);
 
-let monImage = getImage(titre, imgSource);
+    function showError(box, message) {
+        box.textContent = message;
+        box.classList.toggle("d-none", message === "");
+    }
 
-galerieImage.innerHTML = monImage
+    function iconButton(icon, label, target, onClick) {
+        const button = buildElement("button", "btn btn-outline-light");
+        button.type = "button";
+        button.setAttribute("aria-label", label);
+        button.dataset.bsToggle = "modal";
+        button.dataset.bsTarget = target;
+        button.appendChild(buildElement("i", "bi " + icon));
+        button.addEventListener("click", onClick);
+        return button;
+    }
 
-function getImage(titre, urlImage) {
-    titre = sanitizeHtml(titre);
-    urlImage = sanitizeHtml(urlImage);
-    return `<div class="col p-3">
-                <div class="image-card text-white">
-                    <img src="../images/${urlImage}" class="rounded w-100" />
-                        <p class="titre-image">${titre}</p>
-                        <div class="action-image-buttons" data-show="admin">
-                        <button type="button" class="btn btn-outline-light" data-bs-toggle="modal"
-                            data-bs-target="#EditionPhotoModal"><i class="bi bi-pencil-square"></i></button>
-                        <button type="button" class="btn btn-outline-light" data-bs-toggle="modal"
-                            data-bs-target="#DeletePhotoModal"><i class="bi bi-trash"></i></button>
-                </div>
-            </div>
-        </div>`;
-}
+    function renderPictures(pictures) {
+        container.replaceChildren();
+
+        if (pictures.length === 0) {
+            container.appendChild(buildElement("p", "text-center p-3", "Aucune photo pour le moment."));
+            return;
+        }
+
+        pictures.forEach((picture) => {
+            const image = buildElement("img", "rounded w-100");
+            image.src = imageUrl(picture.slug);
+            image.alt = picture.title;
+
+            const actions = buildElement("div", "action-image-buttons");
+            actions.dataset.show = "admin";
+            actions.append(
+                iconButton("bi-pencil-square", "Modifier la photo " + picture.title, "#EditionPhotoModal", () => openEdition(picture)),
+                iconButton("bi-trash", "Supprimer la photo " + picture.title, "#DeletePhotoModal", () => openDeletion(picture)),
+            );
+
+            const card = buildElement("div", "image-card text-white");
+            card.append(image, buildElement("p", "titre-image", picture.title), actions);
+
+            const column = buildElement("div", "col p-3");
+            column.appendChild(card);
+            container.appendChild(column);
+        });
+
+        // Les boutons créés ici doivent aussi être masqués pour les non-administrateurs
+        showAndHideElementsForRoles();
+    }
+
+    async function loadPictures() {
+        try {
+            renderPictures(await apiFetch("picture"));
+        } catch (error) {
+            container.replaceChildren(buildElement("p", "text-center p-3", "Impossible de charger la galerie pour le moment."));
+        }
+    }
+
+    function openEdition(picture = null) {
+        editedId = picture ? picture.id : null;
+        titleInput.value = picture ? picture.title : "";
+        fileInput.value = picture ? picture.slug : "";
+        editTitle.textContent = picture ? "Modifier la photo" : "Ajouter une photo";
+        showError(editError, "");
+    }
+
+    function openDeletion(picture) {
+        deletedId = picture.id;
+        deleteTitle.textContent = picture.title;
+        deleteImage.src = imageUrl(picture.slug);
+        deleteImage.alt = picture.title;
+        showError(deleteError, "");
+    }
+
+    document.getElementById("btn-add-photo").addEventListener("click", () => openEdition());
+
+    photoForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        const slug = fileInput.value.trim();
+        if (title === "" || slug === "") {
+            showError(editError, "Le titre et le nom du fichier image sont obligatoires.");
+            return;
+        }
+
+        try {
+            if (editedId === null) {
+                await apiFetch("picture", "POST", { title, slug });
+            } else {
+                await apiFetch("picture/" + editedId, "PUT", { title, slug });
+            }
+            bootstrap.Modal.getOrCreateInstance(editModal).hide();
+            await loadPictures();
+        } catch (error) {
+            showError(editError, error.message);
+        }
+    });
+
+    document.getElementById("btn-confirm-delete-photo").addEventListener("click", async () => {
+        try {
+            await apiFetch("picture/" + deletedId, "DELETE");
+            bootstrap.Modal.getOrCreateInstance(deleteModal).hide();
+            await loadPictures();
+        } catch (error) {
+            showError(deleteError, error.message);
+        }
+    });
+
+    loadPictures();
+})();

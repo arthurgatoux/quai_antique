@@ -124,3 +124,45 @@ function getInfosUser() {
             console.error("erreur lors de la récupération des données utilisateur", error);
         });
 }
+
+// Appel générique à l'API : ajoute le jeton, lit le JSON et lève une erreur si le statut n'est pas 2xx
+async function apiFetch(path, method = "GET", body = null) {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    const token = getToken();
+    if (token) {
+        headers.append("X-AUTH-TOKEN", token);
+    }
+
+    const response = await fetch(apiUrl + path, {
+        method,
+        headers,
+        body: body === null ? null : JSON.stringify(body),
+    });
+
+    if (response.status === 401 && token) {
+        // Le jeton n'est plus accepté : on déconnecte l'utilisateur
+        eraseCookie(tokenCookieName);
+        eraseCookie(RoleCookieName);
+        window.location.replace("/signin");
+    }
+
+    const data = response.status === 204 ? null : await response.json().catch(() => null);
+    if (!response.ok) {
+        const error = new Error(data?.message ?? "Erreur " + response.status);
+        error.status = response.status;
+        throw error;
+    }
+    return data;
+}
+
+// Crée un élément HTML avec ses classes et son texte (le texte est inséré sans interprétation HTML)
+function buildElement(tag, className = "", text = "") {
+    const element = document.createElement(tag);
+    if (className) {
+        element.className = className;
+    }
+    if (text) {
+        element.textContent = text;
+    }
+    return element;
+}
