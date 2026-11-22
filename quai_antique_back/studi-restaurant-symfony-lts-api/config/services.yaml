@@ -23,22 +23,8 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
-    # Client MongoDB (compteur de réservations).
-    # La connexion n'est ouverte qu'au premier appel ; le délai court évite de bloquer l'API si MongoDB est injoignable.
-    MongoDB\Client:
-        arguments:
-            $uri: '%env(MONGODB_URL)%'
-            $uriOptions:
-                serverSelectionTimeoutMS: 2000
-                connectTimeoutMS: 2000
-
-    app.mongodb.booking_stats:
-        class: MongoDB\Collection
-        factory: ['@MongoDB\Client', 'selectCollection']
-        arguments:
-            $databaseName: '%env(MONGODB_DATABASE)%'
-            $collectionName: 'booking_stats'
-
+    # Compteur de réservations dans MongoDB (le client n'est créé qu'au premier usage).
     App\Service\BookingStats:
         arguments:
-            $collection: '@app.mongodb.booking_stats'
+            $mongodbUrl: '%env(MONGODB_URL)%'
+            $mongodbDatabase: '%env(MONGODB_DATABASE)%'
