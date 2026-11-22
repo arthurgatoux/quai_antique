@@ -40,7 +40,7 @@ quai_antique/
 │   ├── scss/                                Styles (compilés en main.css)
 │   └── .htaccess                            Réécriture vers index.html (navigation SPA)
 └── quai_antique_back/
-    └── studi-restaurant-symfony-lts-api/    Back : API REST Symfony 5.4
+    └── API/                                 Back : API REST Symfony 5.4
         ├── src/Entity/                      User, Restaurant, Picture, Booking, Menu, Category, Food
         ├── src/Controller/                  Contrôleurs de l'API
         ├── src/Service/                     BookingStats : compteur de réservations dans MongoDB
@@ -103,7 +103,7 @@ PHP 8.2 avec l'extension `mongodb` (version 2.5 ou plus), Composer, Symfony CLI 
 ### Back
 
 ```bash
-cd quai_antique_back/studi-restaurant-symfony-lts-api
+cd quai_antique_back/API
 composer install
 ```
 
@@ -157,7 +157,7 @@ Le dépôt GitHub étant public, les deux comptes le clonent directement. Les mi
 1. **Environnement** : passer la version de PHP du compte à **8.2** (le projet exige `php 8.2.*`).
 2. **Bases de données → MySQL** : créer la base et un utilisateur dédié. Le nom de la base est préfixé par le nom du compte, et l'hôte est `mysql-quaiantique17-back.alwaysdata.net`.
 3. **Accès distant → SSH** : créer un utilisateur SSH.
-4. **Web → Sites** : créer un site de type **PHP** avec l'adresse `quaiantique17-back.alwaysdata.net` et le répertoire racine `/quai_antique/quai_antique_back/studi-restaurant-symfony-lts-api/public/`. Le chemin est relatif au dossier personnel du compte.
+4. **Web → Sites** : créer un site de type **PHP** avec l'adresse `quaiantique17-back.alwaysdata.net` et le répertoire racine `/quai_antique/quai_antique_back/API/public/`. Le chemin est relatif au dossier personnel du compte.
 
 **MongoDB (compteur de réservations)**
 
@@ -177,7 +177,7 @@ Si le dépôt était privé, il fallait une clé de déploiement en lecture seul
 
 ```bash
 git clone https://github.com/arthurgatoux/quai_antique.git
-cd quai_antique/quai_antique_back/studi-restaurant-symfony-lts-api
+cd quai_antique/quai_antique_back/API
 composer install --no-dev --optimize-autoloader
 ```
 
@@ -259,7 +259,7 @@ cd ~/quai_antique && git pull
 
 # Back (compte quaiantique17-back)
 cd ~/quai_antique && git pull
-cd quai_antique_back/studi-restaurant-symfony-lts-api
+cd quai_antique_back/API
 composer install --no-dev --optimize-autoloader   # seulement si composer.lock a changé
 php bin/console cache:clear
 php bin/console doctrine:migrations:migrate --no-interaction
