@@ -35,7 +35,7 @@ class BookingStatsTest extends TestCase
         $collection->method('updateOne')->willThrowException(new \RuntimeException('connexion refusée'));
 
         $logger = $this->createMock(LoggerInterface::class);
-        $logger->expects($this->once())->method('error');
+        $logger->expects($this->once())->method('error')->with($this->stringContains('RuntimeException'));
 
         (new BookingStats($logger, 'mongodb://127.0.0.1', 'test', $collection))->recordBooking();
     }
@@ -65,5 +65,18 @@ class BookingStatsTest extends TestCase
         $logger->expects($this->once())->method('error');
 
         (new BookingStats($logger, 'ceci-n-est-pas-une-url', 'test'))->recordBooking();
+    }
+
+    public function testTheLogNeverContainsTheCredentials(): void
+    {
+        $collection = $this->createMock(Collection::class);
+        $collection->method('updateOne')->willThrowException(
+            new \RuntimeException('échec sur mongodb+srv://arthur:secret@cluster.example.net/base'),
+        );
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('error')->with($this->logicalNot($this->stringContains('secret')));
+
+        (new BookingStats($logger, 'mongodb://127.0.0.1', 'test', $collection))->recordBooking();
     }
 }
