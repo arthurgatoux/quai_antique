@@ -57,8 +57,14 @@ class BookingStats
                 ['upsert' => true],
             );
         } catch (Throwable $e) {
-            $this->logger->error('MongoDB indisponible : réservation non comptée.', ['exception' => $e]);
+            $this->logger->error('MongoDB indisponible : réservation non comptée. '.self::describe($e));
         }
+    }
+
+    /** Décrit l'erreur pour le journal, sans jamais y laisser d'identifiants de connexion. */
+    private static function describe(Throwable $e): string
+    {
+        return $e::class.' : '.preg_replace('~://[^@\s]*@~', '://***@', $e->getMessage());
     }
 
     /** Nombre total de réservations faites (0 tant qu'aucune n'a été comptée). */
