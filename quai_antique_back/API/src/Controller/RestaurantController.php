@@ -53,6 +53,8 @@ class RestaurantController extends AbstractController
      */
     public function new(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $restaurant = $this->serializer->deserialize($request->getContent(), Restaurant::class, 'json');
         $restaurant->setCreatedAt(new DateTimeImmutable());
 
@@ -141,6 +143,8 @@ class RestaurantController extends AbstractController
     #[Route('/{id}', name: 'edit', methods: 'PUT')]
     public function edit(int $id, Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $restaurant = $this->repository->findOneBy(['id' => $id]);
         if ($restaurant) {
             $restaurant = $this->serializer->deserialize(
@@ -182,6 +186,8 @@ class RestaurantController extends AbstractController
     #[Route('/{id}', name: 'delete', methods: 'DELETE')]
     public function delete(int $id): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $restaurant = $this->repository->findOneBy(['id' => $id]);
         if ($restaurant) {
             $this->manager->remove($restaurant);

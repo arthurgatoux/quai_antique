@@ -106,17 +106,23 @@ function inscrireUtilisateur() {
         redirect: 'follow'
     };
 
+    const message = document.getElementById("signup-message");
+    const showMessage = (text, isError) => {
+        message.textContent = text;
+        message.classList.remove("d-none", "text-danger", "text-success");
+        message.classList.add(isError ? "text-danger" : "text-success");
+    };
+
     fetch(apiUrl + "registration", requestOptions)
         .then(response => {
-            if(response.ok) {
-                return response.json();
-            } else {
-                alert("Erreur lors de l'inscription");
+            if (!response.ok) {
+                throw new Error("registration failed");
             }
+            return response.json();
         })
-        .then(result => {
-            alert("Bravo vous êtes maintenant inscrit. Vous pouvez vous connecter.");
-            document.location.href="/signin";
+        .then(() => {
+            showMessage("Bravo, vous êtes inscrit. Redirection vers la connexion…", false);
+            setTimeout(() => { document.location.href = "/signin"; }, 1500);
         })
-        .catch(error => console.log('error', error));
+        .catch(() => showMessage("Erreur lors de l'inscription. Cet email est peut-être déjà utilisé.", true));
 }
