@@ -54,7 +54,7 @@ final class SmokeTest extends WebTestCase
     {
         $client = self::createClient();
         $client->followRedirects(false);
-        $client->request('GET', '/api/stats/food');
+        $client->request('GET', '/api/stats/bookings');
 
         self::assertResponseStatusCodeSame(401);
     }

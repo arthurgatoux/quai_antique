@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\{Booking, Restaurant};
 use App\Repository\{BookingRepository, RestaurantRepository};
+use App\Service\BookingStats;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Annotations as OA;
@@ -17,6 +18,7 @@ class BookingController extends ApiController
         private EntityManagerInterface $manager,
         private BookingRepository $repository,
         private RestaurantRepository $restaurantRepository,
+        private BookingStats $stats,
     ) {
     }
 
@@ -156,6 +158,7 @@ class BookingController extends ApiController
 
         $this->manager->persist($booking);
         $this->manager->flush();
+        $this->stats->recordBooking();
 
         return new JsonResponse($this->toArray($booking), Response::HTTP_CREATED);
     }
