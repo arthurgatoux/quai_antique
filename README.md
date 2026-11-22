@@ -2,7 +2,7 @@
 
 Projet **fil rouge** de la formation **Studi** pour le **TP Développeur Web et Web Mobile** (titre professionnel DWWM).
 
-Quai Antique est le site d'un restaurant. Les visiteurs consultent la carte et la galerie. Les clients créent un compte, réservent une table et gèrent leurs réservations. L'administrateur gère les photos de la galerie.
+Quai Antique est le site d'un restaurant. Les visiteurs consultent la carte et la galerie. Les clients créent un compte, réservent une table et gèrent leurs réservations. L'administrateur gère les photos de la galerie et suit le nombre total de réservations.
 
 - Site : https://quaiantiquerestaurant17.alwaysdata.net
 - API : https://quaiantique17-back.alwaysdata.net/api
@@ -18,9 +18,11 @@ Auteur : Arthur Gatoux
 |---|---|
 | Visiteur | Accueil, carte (formules, entrées, plats, desserts, boissons), galerie, inscription, connexion |
 | Client | Réserver une table, consulter, modifier et annuler ses réservations, modifier ses informations (nom, prénom, allergies, nombre de convives habituel), changer son mot de passe |
-| Administrateur | Tout ce que fait le client, plus l'ajout, la modification et la suppression des photos de la galerie, et la consultation de toutes les réservations |
+| Administrateur | Tout ce que fait le client, plus l'ajout, la modification et la suppression des photos de la galerie, la consultation de toutes les réservations, et le total de réservations faites |
 
 Règles de réservation : la date ne peut pas être passée, et le nombre de convives par service (midi ou soir) ne peut pas dépasser la capacité du restaurant (`maxGuest`).
+
+Compteur de réservations : chaque réservation créée ajoute 1 à un compteur stocké dans **MongoDB** (base NoSQL). L'administrateur le lit sur la page « Vos réservations » (« Total de réservations : N »). Le compteur ne baisse pas quand une réservation est annulée. Les réservations elles-mêmes restent dans MySQL.
 
 ---
 
@@ -41,6 +43,7 @@ quai_antique/
     └── studi-restaurant-symfony-lts-api/    Back : API REST Symfony 5.4
         ├── src/Entity/                      User, Restaurant, Picture, Booking, Menu, Category, Food
         ├── src/Controller/                  Contrôleurs de l'API
+        ├── src/Service/                     BookingStats : compteur de réservations dans MongoDB
         ├── migrations/                      Migrations Doctrine
         ├── config/                          Sécurité, CORS, Nelmio
         └── seed_prod.sql                    Données de départ pour la production
@@ -51,8 +54,8 @@ quai_antique/
 | Couche | Technologies |
 |---|---|
 | Front | HTML, JavaScript (modules ES), Bootstrap 5, SASS |
-| Back | PHP 8.2, Symfony 5.4, Doctrine ORM, NelmioApiDocBundle, NelmioCorsBundle |
-| Base de données | MySQL / MariaDB |
+| Back | PHP 8.2, Symfony 5.4, Doctrine ORM, NelmioApiDocBundle, NelmioCorsBundle, bibliothèque `mongodb/mongodb` (extension PHP `mongodb`) |
+| Base de données | MySQL / MariaDB (données métier), MongoDB Atlas (compteur de réservations) |
 | Hébergement | Alwaysdata (deux comptes : un pour le back et la base, un pour le front) |
 | Versioning | Git, GitHub |
 
@@ -62,6 +65,7 @@ quai_antique/
 - Rôles : `ROLE_USER` (client) et `ROLE_ADMIN`. Le front les traduit en `client` et `admin`.
 - Les routes de lecture de la carte et de la galerie sont publiques. Les écritures de la carte et de la galerie sont réservées à l'admin.
 - Un client n'accède qu'à ses propres réservations.
+- Le total des réservations (`GET /api/stats/bookings`) est réservé à l'admin. Le front masque aussi la ligne aux autres profils, mais c'est l'API qui fait foi.
 - Les textes affichés par le front sont insérés avec `textContent`, jamais en HTML brut.
 
 ---
@@ -84,6 +88,7 @@ La documentation complète est sur `/api/doc`.
 | Plats | `GET /api/food`, `GET /api/food/{id}` | Public |
 | | `POST /api/food`, `PUT` et `DELETE /api/food/{id}` | Admin |
 | Réservations | `GET`, `POST /api/booking`, `GET`, `PUT`, `DELETE /api/booking/{id}` | Connecté (client : les siennes, admin : toutes) |
+| Statistiques | `GET /api/stats/bookings` (nombre total de réservations faites) | Admin |
 
 Codes de retour : `201` à la création, `204` à la modification et à la suppression, `404` si la ressource n'existe pas, `422` si les données sont invalides, `409` s'il n'y a plus de place pour un service.
 
@@ -93,7 +98,7 @@ Codes de retour : `201` à la création, `204` à la modification et à la suppr
 
 ### Prérequis
 
-PHP 8.2, Composer, Symfony CLI (facultatif), MySQL ou MariaDB, Node.js et npm.
+PHP 8.2 avec l'extension `mongodb` (version 2.5 ou plus), Composer, Symfony CLI (facultatif), MySQL ou MariaDB, un serveur MongoDB (local, ou un cluster Atlas gratuit), Node.js et npm.
 
 ### Back
 
@@ -106,7 +111,11 @@ Créer un fichier `.env.local` (non versionné) :
 
 ```dotenv
 DATABASE_URL="mysql://utilisateur:motdepasse@127.0.0.1:3306/quai_antique?serverVersion=mariadb-10.6.0&charset=utf8mb4"
+MONGODB_URL="mongodb+srv://utilisateur:motdepasse@cluster.xxxxx.mongodb.net/"
+MONGODB_DATABASE="quai_antique"
 ```
+
+Sans ces deux dernières lignes, le `.env` utilise un MongoDB local (`mongodb://127.0.0.1:27017`).
 
 Vérifier aussi que `CORS_ALLOW_ORIGIN` du fichier `.env` autorise l'adresse du front local. Puis :
 
@@ -150,6 +159,18 @@ Le dépôt GitHub étant public, les deux comptes le clonent directement. Les mi
 3. **Accès distant → SSH** : créer un utilisateur SSH.
 4. **Web → Sites** : créer un site de type **PHP** avec l'adresse `quaiantique17-back.alwaysdata.net` et le répertoire racine `/quai_antique/quai_antique_back/studi-restaurant-symfony-lts-api/public/`. Le chemin est relatif au dossier personnel du compte.
 
+**MongoDB (compteur de réservations)**
+
+Alwaysdata ne propose pas MongoDB sur ce compte, la base est hébergée sur **MongoDB Atlas** (offre gratuite M0).
+
+1. Sur Atlas : créer un cluster M0 et un utilisateur de base de données, puis récupérer la chaîne de connexion (Connect → Drivers). Dans **Network Access**, autoriser `0.0.0.0/0`, car Alwaysdata n'a pas d'adresse IP sortante fixe.
+2. Installer l'extension PHP en SSH, avant le `composer install` :
+   ```bash
+   cd ~
+   ad_install_pecl mongodb
+   ```
+   Le script affiche une ligne `extension = /home/<compte>/mongodb.so`. L'ajouter au php.ini du compte (panel, **Environnement → PHP**), puis contrôler avec `php -m | grep -i mongodb`.
+
 **Récupérer le code (en SSH)**
 
 Si le dépôt était privé, il fallait une clé de déploiement en lecture seule. Le dépôt est maintenant public, un simple clone suffit.
@@ -169,6 +190,8 @@ APP_ENV=prod
 APP_SECRET=<chaîne aléatoire longue>
 DATABASE_URL="mysql://<utilisateur>:<motdepasse>@mysql-quaiantique17-back.alwaysdata.net:3306/<base>?serverVersion=mariadb-10.6.0&charset=utf8mb4"
 CORS_ALLOW_ORIGIN='^https://quaiantiquerestaurant17\.alwaysdata\.net$'
+MONGODB_URL="mongodb+srv://<utilisateur>:<motdepasse>@<cluster>.mongodb.net/"
+MONGODB_DATABASE="quai_antique"
 ```
 
 ```bash
@@ -208,6 +231,7 @@ Se déconnecter puis se reconnecter pour que le rôle soit pris en compte.
 - `https://quaiantique17-back.alwaysdata.net/api/doc` répond `200`.
 - `GET /api/menu` renvoie la liste des formules.
 - Un appel avec l'en-tête `Origin: https://quaiantiquerestaurant17.alwaysdata.net` renvoie `access-control-allow-origin`.
+- Après une réservation, `/allResa` affiche en admin « Total de réservations : N », et le document `bookings` de la collection `booking_stats` est à jour dans Atlas.
 
 ### 2. Front (compte `quaiantiquerestaurant17`)
 
