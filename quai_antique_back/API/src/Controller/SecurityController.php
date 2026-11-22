@@ -17,6 +17,9 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api', name: 'app_api_')]
 class SecurityController extends AbstractController
 {
+    // Champs décidés par le serveur : jamais acceptés depuis le corps de la requête
+    private const FORBIDDEN_FIELDS = ['id', 'roles', 'apiToken', 'createdAt', 'updatedAt'];
+
     public function __construct(
         private EntityManagerInterface $manager,
         private SerializerInterface $serializer,
@@ -53,7 +56,12 @@ class SecurityController extends AbstractController
      */
     public function register(Request $request): JsonResponse
     {
-        $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+        $user = $this->serializer->deserialize(
+            $request->getContent(),
+            User::class,
+            'json',
+            [AbstractNormalizer::IGNORED_ATTRIBUTES => self::FORBIDDEN_FIELDS],
+        );
         $user->setPassword($this->passwordHasher->hashPassword($user, $user->getPassword()));
         $user->setCreatedAt(new DateTimeImmutable());
 
@@ -118,9 +126,15 @@ class SecurityController extends AbstractController
     {
         $user = $this->getUser();
 
-        $responseData = $this->serializer->serialize($user, 'json');
-
-        return new JsonResponse($responseData, Response::HTTP_OK, [], true);
+        return new JsonResponse([
+            'id'          => $user->getId(),
+            'email'       => $user->getUserIdentifier(),
+            'firstName'   => $user->getFirstName(),
+            'lastName'    => $user->getLastName(),
+            'guestNumber' => $user->getGuestNumber(),
+            'allergy'     => $user->getAllergy(),
+            'roles'       => $user->getRoles(),
+        ], Response::HTTP_OK);
     }
 
     #[Route('/account/edit', name: 'edit', methods: 'PUT')]
@@ -147,7 +161,10 @@ class SecurityController extends AbstractController
             $request->getContent(),
             User::class,
             'json',
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $this->getUser()],
+            [
+                AbstractNormalizer::OBJECT_TO_POPULATE => $this->getUser(),
+                AbstractNormalizer::IGNORED_ATTRIBUTES => self::FORBIDDEN_FIELDS,
+            ],
         );
         $user->setUpdatedAt(new DateTimeImmutable());
 
