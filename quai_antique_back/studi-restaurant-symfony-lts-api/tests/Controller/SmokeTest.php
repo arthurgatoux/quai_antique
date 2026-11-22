@@ -49,4 +49,13 @@ final class SmokeTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
     }
+
+    public function testStatsRouteIsSecure(): void
+    {
+        $client = self::createClient();
+        $client->followRedirects(false);
+        $client->request('GET', '/api/stats/food');
+
+        self::assertResponseStatusCodeSame(401);
+    }
 }
