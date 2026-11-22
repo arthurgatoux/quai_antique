@@ -9,6 +9,11 @@ use Psr\Log\LoggerInterface;
 
 class BookingStatsTest extends TestCase
 {
+    private function stats(Collection $collection): BookingStats
+    {
+        return new BookingStats($this->createMock(LoggerInterface::class), 'mongodb://127.0.0.1', 'test', $collection);
+    }
+
     public function testRecordBookingIncrementsTheCounterAndCreatesTheDocumentIfMissing(): void
     {
         $collection = $this->createMock(Collection::class);
@@ -21,7 +26,7 @@ class BookingStatsTest extends TestCase
                 ['upsert' => true],
             );
 
-        (new BookingStats($collection, $this->createMock(LoggerInterface::class)))->recordBooking();
+        $this->stats($collection)->recordBooking();
     }
 
     public function testRecordBookingDoesNotBreakTheReservationWhenMongoDbIsDown(): void
@@ -32,7 +37,7 @@ class BookingStatsTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error');
 
-        (new BookingStats($collection, $logger))->recordBooking();
+        (new BookingStats($logger, 'mongodb://127.0.0.1', 'test', $collection))->recordBooking();
     }
 
     public function testTotalReadsTheCounterFromTheDocument(): void
@@ -43,7 +48,7 @@ class BookingStatsTest extends TestCase
             ->with(['_id' => 'bookings'])
             ->willReturn(['_id' => 'bookings', 'total' => 42]);
 
-        $this->assertSame(42, (new BookingStats($collection, $this->createMock(LoggerInterface::class)))->total());
+        $this->assertSame(42, $this->stats($collection)->total());
     }
 
     public function testTotalIsZeroBeforeTheFirstBooking(): void
@@ -51,6 +56,14 @@ class BookingStatsTest extends TestCase
         $collection = $this->createMock(Collection::class);
         $collection->method('findOne')->willReturn(null);
 
-        $this->assertSame(0, (new BookingStats($collection, $this->createMock(LoggerInterface::class)))->total());
+        $this->assertSame(0, $this->stats($collection)->total());
+    }
+
+    public function testAnInvalidMongoDbUrlDoesNotBreakTheReservation(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('error');
+
+        (new BookingStats($logger, 'ceci-n-est-pas-une-url', 'test'))->recordBooking();
     }
 }
