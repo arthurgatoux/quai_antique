@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Food;
 use App\Repository\{CategoryRepository, FoodRepository};
-use App\Service\FoodStats;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Annotations as OA;
@@ -18,7 +17,6 @@ class FoodController extends ApiController
         private EntityManagerInterface $manager,
         private FoodRepository $repository,
         private CategoryRepository $categoryRepository,
-        private FoodStats $stats,
     ) {
     }
 
@@ -86,13 +84,8 @@ class FoodController extends ApiController
     public function show(int $id): JsonResponse
     {
         $food = $this->repository->find($id);
-        if (!$food) {
-            return $this->notFound();
-        }
 
-        $this->stats->recordView($id);
-
-        return new JsonResponse($this->toArray($food));
+        return $food ? new JsonResponse($this->toArray($food)) : $this->notFound();
     }
 
     /** @OA\Post(path="/api/food", summary="Créer un plat (admin)",

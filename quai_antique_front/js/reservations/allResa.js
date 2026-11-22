@@ -1,5 +1,6 @@
 (() => {
     const container = document.getElementById("allReservations");
+    const totalElement = document.getElementById("totalReservations");
 
     // "2030-05-12" -> "12/05/2030"
     const formatDate = (isoDate) => isoDate.split("-").reverse().join("/");
@@ -29,6 +30,16 @@
         return row;
     }
 
+    // Compteur tenu dans MongoDB, visible uniquement par l'administrateur
+    async function loadTotal() {
+        try {
+            const stats = await apiFetch("stats/bookings");
+            totalElement.textContent = "Total de réservations : " + stats.total;
+        } catch (error) {
+            totalElement.textContent = "Total de réservations : indisponible";
+        }
+    }
+
     async function loadReservations() {
         try {
             const bookings = await apiFetch("booking");
@@ -44,5 +55,8 @@
         }
     }
 
+    if (getRole() === "admin") {
+        loadTotal();
+    }
     loadReservations();
 })();
