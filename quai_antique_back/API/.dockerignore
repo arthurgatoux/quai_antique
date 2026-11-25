@@ -1,0 +1,7 @@
+.git
+.git.bak
+.env.local
+vendor
+var
+tests
+*.png

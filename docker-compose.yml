@@ -1,0 +1,65 @@
+# Environnement de développement du projet Quai Antique.
+# Lancement : docker compose up -d --build
+# Chaque service ci-dessous correspond à un composant décrit dans la procédure d'installation.
+
+services:
+
+  # --- API Symfony (PHP 8.2) : logique métier, authentification par jeton, accès aux deux bases.
+  api:
+    build: ./quai_antique_back/API
+    ports:
+      - "8000:8000"            # l'API répond sur http://127.0.0.1:8000, URL attendue par le front en local
+    environment:
+      APP_ENV: dev
+      APP_SECRET: cle-de-developpement-uniquement
+      DATABASE_URL: "mysql://quai:quai@mariadb:3306/quai_antique?serverVersion=mariadb-10.6.0&charset=utf8mb4"
+      MONGODB_URL: "mongodb://mongo:27017"
+      MONGODB_DATABASE: quai_antique
+      CORS_ALLOW_ORIGIN: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
+    volumes:
+      - ./quai_antique_back/API:/var/www/api   # le code local est visible dans le conteneur
+      - api_vendor:/var/www/api/vendor         # les dépendances restent celles de l'image
+    depends_on:
+      mariadb:
+        condition: service_healthy             # l'API démarre quand MariaDB est prête
+      mongo:
+        condition: service_started
+
+  # --- MariaDB 10.6 : base relationnelle (utilisateurs, réservations, plats, photos).
+  mariadb:
+    image: mariadb:10.6
+    environment:
+      MARIADB_DATABASE: quai_antique
+      MARIADB_USER: quai
+      MARIADB_PASSWORD: quai
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - mariadb_data:/var/lib/mysql            # les données survivent à l'arrêt des conteneurs
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MongoDB 7 : base documentaire, compteur de réservations (collection booking_stats).
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+
+  # --- Front statique (HTML / JS / Bootstrap) servi par Nginx.
+  front:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"                              # site accessible sur http://localhost:8080
+    volumes:
+      - ./quai_antique_front:/usr/share/nginx/html:ro
+
+volumes:
+  mariadb_data:
+  mongo_data:
+  api_vendor:
+
+# Après le premier démarrage :
+#   docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
+#   docker compose exec -T mariadb mariadb -uquai -pquai quai_antique < quai_antique_back/API/seed_prod.sql
